@@ -1,0 +1,33 @@
+version: '3.1'
+
+services:
+  sentiment-webapp:
+    build: .
+    restart: always
+    container_name: sentiment_webapp
+    ports:
+      - "8080:8080"
+  mongo:
+    image: mongo:latest
+    restart: always
+    container_name: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: IT-BIT03
+      MONGO_INITDB_ROOT_PASSWORD: dararatnoi
+    #      MONGO_INITDB_DATABASE: init
+    ports:
+      - 27017:27017
+    volumes:
+      - ./db_data/:/data/db/
+      - /etc/timezone:/etc/timezone:ro
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: always
+    container_name: mongo_ui
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: IT-BIT03
+      ME_CONFIG_MONGODB_ADMINPASSWORD: dararatnoi
+      ME_CONFIG_MONGODB_URL: mongodb://IT-BIT03:dararatnoi@mongo:27017/
