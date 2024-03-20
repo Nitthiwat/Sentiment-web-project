@@ -28,7 +28,6 @@ export default function compare() {
   const [smartphoneInfoSm3, setsmartphoneInfoSm3] = useState({});
 
   const [reviews, setReviews] = useState([]);
-  // const [aspectsReviews, setAspectsReviews] = useState([]);
 
   const [showNeutralData, setShowNeutralData] = useState(true);
 
@@ -310,7 +309,7 @@ export default function compare() {
   };
 
   useEffect(() => {
-    const fetchReviews = async (smartphoneName) => {
+    const fetchReviews = async () => {
       try {
         setIsLoaded(true);
         const selectedSmartphones = [selectedModelSm1, selectedModelSm2, selectedModelSm3].filter(model => model);

@@ -1,72 +1,94 @@
-import Image from "next/image";
 import Navbar from "@/components/navbar";
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, Skeleton } from "@nextui-org/react";
 import { Chart } from "chart.js/auto";
 import { Select, SelectSection, SelectItem } from "@nextui-org/react";
+import { Autocomplete, AutocompleteItem, select } from "@nextui-org/react";
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import anychart from 'anychart';
-import TagCloud from '@/components/TagCloud';
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Pagination, Input } from "@nextui-org/react";
+import axios from 'axios';
 
 
 
 export default function Home() {
-  const [allReviews, setAllReviews] = useState([]);
   const [statusData, setStatusData] = React.useState(false);
   const [isLoaded, setIsLoaded] = React.useState(false);
-  const [myChart, setMyChart] = useState(null);
   const [count_all, setCountAll] = useState(0)
   const [count_pos, setCountPos] = useState(0)
   const [count_neu, setCountNeu] = useState(0)
   const [count_neg, setCountNeg] = useState(0)
+
+  const brandName = ["Apple", "Samsung", "OPPO", "vivo", "Huawei", "Xiaomi"]
   const [selectBrand, setSelectBrand] = React.useState(new Set(["Apple", "OPPO", "Samsung", "vivo", "Xiaomi", "Huawei"]));
-  // const [brandModel, setBrand] = React.useState([{name:"All"}, "Apple", "Samsung", "Oppo", "Vivo", "Xiaomi", "Huawei"]);
-  // const [brandModel, setBrand] = React.useState(["All", "Apple", "Samsung", "Oppo", "Vivo", "Xiaomi", "Huawei"]);
-  const [brandModel, setBrand] = React.useState(["Apple", "OPPO", "Samsung", "vivo", "Xiaomi", "Huawei"]);
+  // const [brandModel, setBrand] = React.useState(["Apple", "OPPO", "Samsung", "vivo", "Xiaomi", "Huawei"]);
 
   const [brandsData, setBrandsData] = React.useState({})
   //2ปุ่ม
-  const [brandList, setBrandList] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState('Apple'); //เอามาจากนี้
 
-  const [models, setModels] = useState([]);  //เอาไว้ทำ key
+  // const [models, setModels] = useState([]);  //เอาไว้ทำ key
   const [showModel, setShowModel] = useState([]) //เอาไว้แสดงผล
   const [defaultSelectModel, setDefaultSelectModel] = useState('iPhone 12')
   const [selectedModel, setSelectedModel] = useState(defaultSelectModel); //user selected
 
+  //donut
+  const [model_pos, setModelCountpos] = useState(0)
+  const [model_neu, setModelCountneu] = useState(0)
+  const [model_neg, setModelCountneg] = useState(0)
 
   const chartRef = useRef(null)
   const donutChartRef = useRef(null)
   const barChartRef = useRef(null)
   const barHorizontalChartRef = useRef(null)
+
   const [selectAspect, setSelectAspect] = React.useState(new Set(["Camera", "Battery", "Screen", "Performance", "Price"]));
-  const [Modelasp, setAspect] = React.useState(["Camera", "Battery", "Screen", "Performance", "Price"]); //ไว้แสดง
+  // const [Modelasp, setAspect] = React.useState(["Camera", "Battery", "Screen", "Performance", "Price"]); //ไว้แสดง
+
+  const [selectedAspectsFilter, setselectedAspectsFilter] = useState('');
+  const [selectedSentimentsFilter, setSelectedSentimentsFilter] = useState('');
   const [aspectsData, setAspectsData] = useState({})
   const [reviews, setReviews] = useState([]);
 
+  const handleSelectAspectSentimentchange = (newValue) => {
+    setselectedAspectsFilter(newValue ?? ''); // ถ้า newValue เป็น null หรือ undefined ให้กำหนดค่าเป็น ''
+  };
+
+  const handleSelectSentimentchange = (newValue) => {
+    setSelectedSentimentsFilter(newValue ?? ''); // ถ้า newValue เป็น null หรือ undefined ให้กำหนดค่าเป็น ''
+  };
+
   useEffect(() => {
-    setStatusData(false)
+    setStatusData(false);
     setIsLoaded(false); // Set loading state before fetching data
-    const fetchData = async () => {
-      let res = await fetch("http://localhost:3000/api/smartphonereview", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      let data = await res.json();
-      // Do something with allPosts, like setting state
-      // setAllReviews(data);
-      await setCountAll(data.overviews.count_all)
-      await setCountPos(data.overviews.count_pos)
-      await setCountNeu(data.overviews.count_neu)
-      await setCountNeg(data.overviews.count_neg)
-      await setBrandsData(data.brands)
-      setStatusData(true);
+    const fetchAllDataSentiment = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/all_sentiments");
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+
+        // Check if data.overviews exists before accessing its properties
+        if (data.overviews) {
+          setCountAll(data.overviews.count_all);
+          setCountPos(data.overviews.count_pos);
+          setCountNeu(data.overviews.count_neu);
+          setCountNeg(data.overviews.count_neg);
+        }
+
+        if (data.brands) {
+          setBrandsData(data.brands);
+        }
+
+        setStatusData(true);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Handle error state if needed
+      }
+      setIsLoaded(true);
     }
-    fetchData();
+    fetchAllDataSentiment();
   }, []);
+
 
   if (chartRef.current) {
     if (chartRef.current.chart) {
@@ -81,13 +103,17 @@ export default function Home() {
       if (brandsData[element] && brandsData[element]['count_pos'] !== undefined && brandsData[element]['count_neu'] !== undefined && brandsData[element]['count_neg'] !== undefined) {
         a.push(element);
         let total = brandsData[element]['count_pos'] + brandsData[element]['count_neu'] + brandsData[element]['count_neg'];
-        array_pos.push(brandsData[element]['count_pos'] / total * 100);
-        array_neu.push(brandsData[element]['count_neu'] / total * 100);
-        array_neg.push(brandsData[element]['count_neg'] / total * 100);
+        // array_pos.push(brandsData[element]['count_pos'] / total * 100);
+        // array_neu.push(brandsData[element]['count_neu'] / total * 100);
+        // array_neg.push(brandsData[element]['count_neg'] / total * 100);
+        array_pos.push(brandsData[element]['count_pos']);
+        array_neu.push(brandsData[element]['count_neu']);
+        array_neg.push(brandsData[element]['count_neg']);
       }
     })
     const newChart = new Chart(context, {
       type: "bar",
+      plugins: [ChartDataLabels],
       data: {
         labels: a,
         datasets: [{
@@ -122,55 +148,41 @@ export default function Home() {
               family: 'Kanit',
             },
             position: 'top'
+          },
+          datalabels: {
+            display: true,
+            align: 'end', // Position data labels at the top
+            anchor: 'end'
+            // color: '#fff' // Color of the data labels
           }
         }
       }
     })
     chartRef.current.chart = newChart
   }
-  //donut
-  const [model_pos, setModelCountpos] = useState(0)
-  const [model_nue, setModelCountneu] = useState(0)
-  const [model_neg, setModelCountneg] = useState(0)
-
 
   useEffect(() => {
-    const fetchData2 = async () => {
-      let res2 = await fetch(`http://localhost:3000/api/brandmodel?brand=${selectedBrand}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      let data2 = await res2.json();
-      console.log(data2);
+    const fetchBrandData = async () => {
+      try {
+        let response = await fetch(`http://localhost:3000/api/brandmodel?brandName=${selectedBrand}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        let data = await response.json();
 
+        // Inspect the response structure and content
+        console.log("Response:", data);
 
-      const result = data2[0].keyword_search;
-      // const result = data2
-      const resultSet = new Set(result);
-      await setModels(resultSet);
-      await setDefaultSelectModel(result[0]);
-      await setSelectedModel(result[0]);
-      await setShowModel(result)
-      // console.log("gggg", result[0]);
-      // console.log("model", selectedModel)
-      console.log("kkkk", result)
-      console.log('====================================');
-      console.log(showModel);
-      console.log('====================================');
-      console.log('====================================');
-      console.log(selectedModel);
-      console.log('====================================');
-
+        // Process the data as needed
+        // setSelectedModel(data);
+        setShowModel(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     };
 
-    fetchData2();
-    fetchDataBrand();
-
-  }, [defaultSelectModel, setDefaultSelectModel, selectedBrand]);
-
-
+    fetchBrandData();
+  }, [selectedBrand]);
 
   const getBackgroundColor = (sentiment) => {
     switch (sentiment) {
@@ -211,71 +223,185 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setIsLoaded(true);
+        const selectedSmartphones = [selectedModel].filter(model => model);
 
+        const promises = selectedSmartphones.map(model =>
+          axios.get(`/api/compare_smartphonereview?smartphone=${encodeURIComponent(model)}&selectedAspect=${encodeURIComponent(selectedAspectsFilter)}`));
 
-  const fetchDataModel = (e) => {
-    setSelectedModel(e.target.value);
-    fetchDataBrand();
+        const responses = await Promise.all(promises);
+        const reviewData = responses.map(response => response.data);
+
+        // Combine review data from all responses
+        const combinedReviews = reviewData.flat();
+
+        // Update state with combined reviews
+        setReviews(combinedReviews);
+      } catch (error) {
+        console.error('Error fetching smartphone review data:', error);
+      } finally {
+        setIsLoaded(false);
+      }
+    };
+
+    fetchReviews();
+  }, [selectedModel, selectedAspectsFilter]);
+
+  const showindividualModel = async (selectedModel) => {
+    try {
+      // Fetch individual model data
+      const individualModelResponse = await axios.get(`http://localhost:3000/api/individual_Info?smartphone=${encodeURIComponent(selectedModel)}`);
+      const individualModelData = individualModelResponse.data;
+
+      // Initialize counts and aspects
+      let model_pos = 0,
+        model_neu = 0,
+        model_neg = 0;
+      let aspects = {
+        "Camera": { aspect_pos: 0, aspect_neu: 0, aspect_neg: 0 },
+        "Battery": { aspect_pos: 0, aspect_neu: 0, aspect_neg: 0 },
+        "Screen": { aspect_pos: 0, aspect_neu: 0, aspect_neg: 0 },
+        "Performance": { aspect_pos: 0, aspect_neu: 0, aspect_neg: 0 },
+        "Price": { aspect_pos: 0, aspect_neu: 0, aspect_neg: 0 }
+      };
+
+      // Loop through data to count sentiments and aspects
+      individualModelData.forEach(item => {
+        switch (item.Sentiment_Label) {
+          case "pos":
+            model_pos++;
+            break;
+          case "neu":
+            model_neu++;
+            break;
+          case "neg":
+            model_neg++;
+            break;
+        }
+
+        // Check if Aspects is an array before iterating
+        if (Array.isArray(item.Aspects)) {
+          item.Aspects.forEach(aspectItem => {
+            switch (aspectItem.Aspect_Sentiment_Label) {
+              case "pos":
+                aspects[aspectItem.aspects].aspect_pos++;
+                break;
+              case "neu":
+                aspects[aspectItem.aspects].aspect_neu++;
+                break;
+              case "neg":
+                aspects[aspectItem.aspects].aspect_neg++;
+                break;
+            }
+          });
+        }
+      });
+
+      // Construct the result object
+      const result = {
+        overviews: {
+          model_pos: model_pos,
+          model_neu: model_neu,
+          model_neg: model_neg
+        },
+        Aspect: aspects
+      };
+
+      // Update state with individual model data
+      setModelCountpos(result.overviews.model_pos);
+      setModelCountneu(result.overviews.model_neu);
+      setModelCountneg(result.overviews.model_neg);
+      setAspectsData(result.Aspect);
+
+      console.log(result); // or return this result or use it as needed
+    } catch (error) {
+      console.error("Error fetching individual model data:", error);
+    }
+  };
+
+  const handleModelChange = (selected) => {
+    setSelectedModel(selected);
+    showindividualModel(selected);
+  };
+
+  useEffect(() => {
+    showindividualModel(selectedModel);
+  }, [selectedModel]);
+
+  const filterReviews = () => {
+    if (selectedAspectsFilter !== '' && selectedSentimentsFilter !== '') {
+      return reviews.filter(review => review.aspects === selectedAspectsFilter && review.Aspect_Sentiment_Label === selectedSentimentsFilter);
+    } else if (selectedSentimentsFilter !== '') {
+      return reviews.filter(review => review.Sentiment_Label === selectedSentimentsFilter);
+    } else if (selectedAspectsFilter !== '') {
+      return reviews.filter(review => review.aspects === selectedAspectsFilter)
+    } else {
+      return reviews
+    }
   }
 
-  const callapi = async (fetchDataModel) => {
-    console.log("Test fetch data => ", fetchDataModel)
+
+  // const fetchDataModel = (e) => {
+  //   setSelectedModel(e.target.value);
+  //   fetchDataBrand();
+  // }
+
+  // const callapi = async (fetchDataModel) => {
+  //   console.log("Test fetch data => ", fetchDataModel)
 
 
-    let brandres = await fetch(`http://localhost:3000/api/countsentiment?brand=${selectedBrand}&model=${fetchDataModel}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    let countmodel = await brandres.json();
-    setSelectedModel(fetchDataModel);
-    console.log("yshs", countmodel)
-    await setModelCountpos(countmodel.overviews.model_pos)
-    await setModelCountneu(countmodel.overviews.model_neu)
-    await setModelCountneg(countmodel.overviews.model_neg)
-    await setAspectsData(countmodel.Aspect)
+  //   let brandres = await fetch(`http://localhost:3000/api/countsentiment?brand=${selectedBrand}&model=${fetchDataModel}`);
 
+  //   let countmodel = await brandres.json();
+  //   setSelectedModel(fetchDataModel);
+  //   console.log("yshs", countmodel)
+  //   setModelCountpos(countmodel.overviews.model_pos)
+  //   setModelCountneu(countmodel.overviews.model_neu)
+  //   setModelCountneg(countmodel.overviews.model_neg)
+  //   setAspectsData(countmodel.Aspect)
 
-    let reviewRes = await fetch(`http://localhost:3000/api/reviewmodel?model=${fetchDataModel}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    let reviews = await reviewRes.json();
-    setReviews(reviews);
+  //   let reviewRes = await fetch(`http://localhost:3000/api/reviewmodel?model=${fetchDataModel}`, {
+  //     method: "GET",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //   });
+  //   let reviews = await reviewRes.json();
+  //   setReviews(reviews);
 
-  };
+  // };
 
-  const fetchDataBrand = async () => {
-    console.log("Test fetch data => ", selectedModel)
+  // const fetchDataBrand = async () => {
+  //   console.log("Test fetch data => ", selectedModel)
 
-    let brandres = await fetch(`http://localhost:3000/api/countsentiment?brand=${selectedBrand}&model=${selectedModel}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    let countmodel = await brandres.json();
-    console.log("yshs", countmodel)
-    await setModelCountpos(countmodel.overviews.model_pos)
-    await setModelCountneu(countmodel.overviews.model_neu)
-    await setModelCountneg(countmodel.overviews.model_neg)
-    await setAspectsData(countmodel.Aspect)
+  //   let brandres = await fetch(`http://localhost:3000/api/countsentiment?brand=${selectedBrand}&model=${selectedModel}`, {
+  //     method: "GET",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //   });
+  //   let countmodel = await brandres.json();
+  //   console.log("yshs", countmodel)
+  //   await setModelCountpos(countmodel.overviews.model_pos)
+  //   await setModelCountneu(countmodel.overviews.model_neu)
+  //   await setModelCountneg(countmodel.overviews.model_neg)
+  //   await setAspectsData(countmodel.Aspect)
 
-    let reviewRes = await fetch(`http://localhost:3000/api/reviewmodel?model=${selectedModel}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    let reviews = await reviewRes.json();
-    setReviews(reviews);
-    console.log('====================================');
-    console.log('hghg', reviews);
-    console.log('====================================');
-  };
+  //   let reviewRes = await fetch(`http://localhost:3000/api/reviewmodel?model=${selectedModel}`, {
+  //     method: "GET",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //   });
+  //   let reviews = await reviewRes.json();
+  //   setReviews(reviews);
+  //   console.log('====================================');
+  //   console.log('hghg', reviews);
+  //   console.log('====================================');
+  // };
 
 
   if (donutChartRef.current) {
@@ -283,7 +409,7 @@ export default function Home() {
       donutChartRef.current.chart.destroy();
     }
     const donutContext = donutChartRef.current.getContext("2d");
-    const total = model_pos + model_nue + model_neg;
+    const total = model_pos + model_neu + model_neg;
     const newDonutChart = new Chart(donutContext, {
       type: "doughnut",
       plugins: [ChartDataLabels],
@@ -292,7 +418,7 @@ export default function Home() {
         datasets: [{
           data: [
             (model_pos / total) * 100,
-            (model_nue / total) * 100,
+            (model_neu / total) * 100,
             (model_neg / total) * 100
           ],
           backgroundColor: [
@@ -506,7 +632,7 @@ export default function Home() {
         options: {
           indexAxis: "y",
           responsive: true,
-         
+
           plugins: {
             title: {
               display: true,
@@ -538,8 +664,6 @@ export default function Home() {
     }
   }, [selectAspect, aspectsData]);
 
-
-
   return (
     <div className="bg-costom-pbg w-full h-full pb-2">
       <Navbar />
@@ -547,98 +671,98 @@ export default function Home() {
         <div className="flex flex-wrap -m-3 mb-5">
           <div className="w-full sm:w-1/2 md:w-1/4 p-3">
             {/* <Skeleton isLoaded={statusData} className="  shadow-md rounded-[20px]"> */}
-              <div className="bg-custom-blue text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-white">{count_all.toLocaleString()}</h3>
+            <div className="bg-custom-blue text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
+              <div>
+                <h3 className="text-2xl font-bold text-white">{count_all.toLocaleString()}</h3>
 
-                  <h6 className="text-lg font-normal text-gray-600">Reviews</h6>
-                </div>
-                <span className="material-icons text-3xl">mode_comment</span>
+                <h6 className="text-lg font-normal text-gray-600">Reviews</h6>
               </div>
+              <span className="material-icons text-3xl">mode_comment</span>
+            </div>
             {/* </Skeleton> */}
           </div>
 
           <div className="w-full sm:w-1/2 md:w-1/4 p-3">
             {/* <Skeleton isLoaded={statusData} className="  shadow-md rounded-[20px]"> */}
-              <div className="bg-custom-green text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">
-                    {
-                      count_pos.toLocaleString()
-                    }
-                  </h3>
-                  <h6 className="text-lg font-normal text-gray-600">Positive Reviews</h6>
-                </div>
-                <span className="material-icons text-3xl">sentiment_satisfied_alt</span>
+            <div className="bg-custom-green text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
+              <div>
+                <h3 className="text-2xl font-bold">
+                  {
+                    count_pos.toLocaleString()
+                  }
+                </h3>
+                <h6 className="text-lg font-normal text-gray-600">Positive Reviews</h6>
               </div>
+              <span className="material-icons text-3xl">sentiment_satisfied_alt</span>
+            </div>
             {/* </Skeleton> */}
           </div>
 
           <div className="w-full sm:w-1/2 md:w-1/4 p-3">
             {/* <Skeleton isLoaded={statusData} className="  shadow-md rounded-[20px]"> */}
-              <div className="bg-custom-yellow text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">
-                    {
+            <div className="bg-custom-yellow text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
+              <div>
+                <h3 className="text-2xl font-bold">
+                  {
 
-                      count_neu.toLocaleString()
-                    }
-                  </h3>
-                  <h6 className="text-lg font-normal text-gray-600">Neutral Reviews</h6>
-                </div>
-                <span className="material-icons text-3xl">sentiment_neutral</span>
+                    count_neu.toLocaleString()
+                  }
+                </h3>
+                <h6 className="text-lg font-normal text-gray-600">Neutral Reviews</h6>
               </div>
+              <span className="material-icons text-3xl">sentiment_neutral</span>
+            </div>
             {/* </Skeleton> */}
           </div>
 
           <div className="w-full sm:w-1/2 md:w-1/4 p-3">
             {/* <Skeleton isLoaded={statusData} className="  shadow-md rounded-[20px]"> */}
-              <div className="bg-custom-red text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold">
-                    {
-                      count_neg.toLocaleString()
-                    }
-                  </h3>
-                  <h6 className="text-lg font-normal text-gray-600">Negative Reviews</h6>
-                </div>
-                <span className="material-icons text-3xl">sentiment_very_dissatisfied</span>
+            <div className="bg-custom-red text-white shadow-md rounded-[20px] p-4 py-6 pb-8 flex justify-between">
+              <div>
+                <h3 className="text-2xl font-bold">
+                  {
+                    count_neg.toLocaleString()
+                  }
+                </h3>
+                <h6 className="text-lg font-normal text-gray-600">Negative Reviews</h6>
               </div>
+              <span className="material-icons text-3xl">sentiment_very_dissatisfied</span>
+            </div>
             {/* </Skeleton> */}
           </div>
         </div>
         <div className="row col-12  mb-5">
           <div className="w-full">
             {/* <Skeleton isLoaded={statusData} className="shadow-md rounded-[20px] h-10%"> */}
-              <div className="card border-0  p-4"
-                style={{
-                  boxShadow: "5px 5px 5px 5px rgba(197, 197, 197, 0.2)",
-                  borderRadius: "20px",
-                  backgroundColor: "white"
-                }}>
-                <div className="card-body">
-                  <div className="flex w-full flex-wrap md:flex-nowrap  mt-1 mb-1 justify-end">
-                    <Select
-                      label="Brand"
-                      selectionMode="multiple"
-                      placeholder="Select Brand"
-                      selectedKeys={selectBrand}
-                      onSelectionChange={setSelectBrand}
-                      style={{ width: '250px', height: '50px' }}
-                      className="max-w-xs justify-end flex"
-                    >
-                      {brandModel.map((item) => (
-                        <SelectItem key={item} value={item} >
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </Select>
-                  </div>
-                  <div>
-                    <canvas ref={chartRef} height="120"></canvas>
-                  </div>
+            <div className="card border-0  p-4"
+              style={{
+                boxShadow: "5px 5px 5px 5px rgba(197, 197, 197, 0.2)",
+                borderRadius: "20px",
+                backgroundColor: "white"
+              }}>
+              <div className="card-body">
+                <div className="flex w-full flex-wrap md:flex-nowrap  mt-1 mb-1 justify-end">
+                  <Select
+                    label="Brand"
+                    selectionMode="multiple"
+                    placeholder="Select Brand"
+                    selectedKeys={selectBrand}
+                    onSelectionChange={setSelectBrand}
+                    style={{ width: '250px', height: '50px' }}
+                    className="max-w-xs justify-end flex"
+                  >
+                    {brandName.map((item) => (
+                      <SelectItem key={item} value={item} >
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <canvas ref={chartRef} height="120"></canvas>
                 </div>
               </div>
+            </div>
             {/* </Skeleton> */}
           </div>
         </div>
@@ -646,7 +770,19 @@ export default function Home() {
         {/* filter */}
 
         <div className="flex w-full flex-wrap md:flex-nowrap gap-4 mt-5 mb-5 justify-end">
-          <Select
+          <div className="rounded-[12px]" style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}>
+            <Autocomplete
+              isRequired
+              variant="bordered"
+              label="Select Brand"
+              items={brandName.map(brand => ({ label: brand, value: brand }))}
+              selectedKey={selectedBrand}
+              onSelectionChange={setSelectedBrand}
+              className="max-w-xs"
+            >
+              {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+            </Autocomplete>
+          </div>{/* <Select
             label="Select Brand"
             // value={selectedBrand} 
             selectedKeys={[selectedBrand]}
@@ -656,52 +792,131 @@ export default function Home() {
             style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}
           // onChange={(value) => setSelectedBrand(value)}
           >
-            {brandModel.map((brand) => (
+            {brandName.map((brand) => (
               <SelectItem key={brand} value={brand}>
                 {brand}
               </SelectItem>
             ))}
-          </Select>
+          </Select> */}
+          <div className="rounded-[12px]" style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}>
+            <Autocomplete
+              isRequired
+              variant="bordered"
+              label="Select Smartphone"
+              items={showModel.map(model => ({ label: model, value: model }))}
+              selectedKey={selectedModel}
+              onSelectionChange={setSelectedModel}
+              // disabled={!selectedBrand}
+              className="max-w-xs"
+            // multiple
+            >
+              {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+            </Autocomplete>
+          </div>
 
-          <Select
+
+          {/* <Select
             label="Select Model"
             className="max-w-xs "
             style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}
             color="default"
             selectedKeys={[selectedModel]}
-            onChange={(e) => callapi(e.target.value)}
+            onChange={handleModelChange}
             // SelectionChange={fetchDataModel}
 
-            defaultSelectedKeys={[selectedModel]}
+            defaultSelectedKeys={[defaultSelectModel]}
           >
             {showModel.map((model) =>
               <SelectItem key={model} value={model}>
                 {model}
               </SelectItem>
             )}
-          </Select>
+          </Select> */}
+          <div className="rounded-[12px]" style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}>
+            <Autocomplete
+              // size="sm"
+              // classNames="w-full"
+              variant="bordered"
+              label="Select Aspect"
+              items={
+                [
+                  { value: 'Camera', label: 'Camera' },
+                  { value: 'Battery', label: 'Battery' },
+                  { value: 'Screen', label: 'Screen' },
+                  { value: 'Performance', label: 'Performance' },
+                  { value: 'Price', label: 'Price' },
+                ]
+              }
+              selectedKey={selectedAspectsFilter}
+              onSelectionChange={handleSelectAspectSentimentchange}
+              className="max-w-xs"
+
+            >
+              {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+            </Autocomplete>
+          </div>
+          <div className="rounded-[12px]" style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}>
+            <Autocomplete
+              // size="sm"
+              // classNames="w-full"
+              variant="bordered"
+              label="Select Sentiment"
+              items={[
+                { value: 'pos', label: 'Positive' },
+                { value: 'neg', label: 'Negative' },
+                { value: 'neu', label: 'Neutral' }
+              ]}
+              selectedKey={selectedSentimentsFilter}
+              onSelectionChange={handleSelectSentimentchange}
+              className="max-w-xs"
+            // style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}
+            >
+              {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+            </Autocomplete>
+          </div>
         </div>
 
         {/* กราฟด้านล่าง */}
-        <div className="flex w-full flex-wrap md:flex-nowrap  mt-5 mb-5 justify-end">
-          <Select
-            label="Aspects"
-            placeholder="Select Aspect"
-            selectionMode="multiple"
-            selectedKeys={selectAspect}
-            onSelectionChange={(selected) => setSelectAspect(new Set(selected))}
+        {/* <div className="flex w-full flex-wrap md:flex-nowrap gap-4 mt-5 mb-5 justify-end">
+          <Autocomplete
+            size="sm"
+            classNames="w-full"
+            variant="bordered"
+            label="Select Aspect"
+            items={
+              [
+                { value: 'Camera', label: 'Camera' },
+                { value: 'Battery', label: 'Battery' },
+                { value: 'Screen', label: 'Screen' },
+                { value: 'Performance', label: 'Performance' },
+                { value: 'Price', label: 'Price' },
+              ]
+            }
+            selectedKey={selectedAspectsFilter}
+            onSelectionChange={handleSelectAspectSentimentchange}
             className="max-w-xs justify-end flex"
-            // style={{ width: '200px', height: '50px' }}
             style={{ boxShadow: "2px 2px 2px 2px rgba(197, 197, 197, 0.2)", backgroundColor: "white" }}
           >
-            {Modelasp.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </Select>
+            {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+          </Autocomplete>
+          <Autocomplete
+            size="sm"
+            classNames="w-full"
+            variant="bordered"
+            label="Select Sentiment"
+            items={[
+              { value: 'pos', label: 'Positive' },
+              { value: 'neg', label: 'Negative' },
+              { value: 'neu', label: 'Neutral' }
+            ]}
+            selectedKey={selectedSentimentsFilter}
+            onSelectionChange={handleSelectSentimentchange}
+            className="max-w-xs justify-end flex"
+          >
+            {(item) => <AutocompleteItem key={item.value}>{item.label}</AutocompleteItem>}
+          </Autocomplete> */}
 
-        </div>
+        {/* </div> */}
         <div className="grid grid-cols-2 gap-2 mt-5">
 
           <div className="bg-white p-4 shadow-md rounded-[20px]" style={{ boxShadow: "5px 5px 5px 5px rgba(197, 197, 197, 0.2)" }}
@@ -712,35 +927,50 @@ export default function Home() {
           <div className="bg-white py-4 px-5 shadow-md rounded-[20px]" style={{
             boxShadow: "5px 5px 5px 5px rgba(197, 197, 197, 0.2)"
           }} >
-
-
             <canvas ref={barChartRef} ></canvas>
           </div>
-
         </div>
         <div className="grid grid-cols-2 gap-2 mt-5 mb-5">
           <div className=" overflow-y-auto shadow-md  bg-white" style={{ borderRadius: "20px", maxHeight: "50vh", boxShadow: "5px 5px 5px 5px rgba(197, 197, 197, 0.2)" }}>
             <Table className="md:w-full md:h-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
               <TableHeader className="sticky top-0 bg-white" >
                 <TableColumn></TableColumn>
-                <TableColumn className="text-base font-sans-semibold" >Overall Review</TableColumn>
+                <TableColumn className="text-base font-sans-semibold" >
+                  {selectedAspectsFilter ? `${selectedAspectsFilter} Review` : "Overall Review"}
+                </TableColumn>
                 <TableColumn className="text-base font-sans-semibold" colSpan="3">Model</TableColumn>
                 <TableColumn className="text-base font-sans-semibold"  >Sentiment</TableColumn>
               </TableHeader>
               <TableBody className="table-body text-base" >
-                {reviews.map((review, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{review.textDisplay}</TableCell>
-                    <TableCell colSpan="3">{review.smartphoneName}</TableCell>
-                    <TableCell className="text-center">
-                      <span style={{
-                        borderRadius: '1px', padding: '3px', backgroundColor: getBackgroundColor(review.Sentiment_Label), color: getTextColor(review.Sentiment_Label)
-                      }}>{getSentimentText(review.Sentiment_Label)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {selectedAspectsFilter !== "" ? (
+                  filterReviews().map((review, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{review.textDisplay_aspect}</TableCell>
+                      <TableCell colSpan="3">{review.smartphoneName}</TableCell>
+                      <TableCell className="text-center">
+                        <span style={{
+                          borderRadius: '1px', padding: '3px', backgroundColor: getBackgroundColor(review.Aspect_Sentiment_Label), color: getTextColor(review.Aspect_Sentiment_Label)
+                        }}>{getSentimentText(review.Aspect_Sentiment_Label)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  filterReviews().map((review, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{review.textDisplay}</TableCell>
+                      <TableCell colSpan="3">{review.smartphoneName}</TableCell>
+                      <TableCell className="text-center">
+                        <span style={{
+                          borderRadius: '1px', padding: '3px', backgroundColor: getBackgroundColor(review.Sentiment_Label), color: getTextColor(review.Sentiment_Label)
+                        }}>{getSentimentText(review.Sentiment_Label)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -749,8 +979,6 @@ export default function Home() {
           }} >
             <canvas ref={barHorizontalChartRef} ></canvas>
           </div>
-
-
         </div >
       </div >
     </div>
