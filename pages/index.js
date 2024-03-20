@@ -166,7 +166,7 @@ export default function Home() {
   useEffect(() => {
     const fetchBrandData = async () => {
       try {
-        let response = await fetch(`http://localhost:3000/api/brandmodel?brandName=${selectedBrand}`);
+        let response = await fetch(`/api/brandmodel?brandName=${selectedBrand}`);
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
@@ -178,6 +178,7 @@ export default function Home() {
         // Process the data as needed
         // setSelectedModel(data);
         setShowModel(data);
+        console.log("fetch Brand Complete");
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -255,7 +256,7 @@ export default function Home() {
   const showindividualModel = async (selectedModel) => {
     try {
       // Fetch individual model data
-      const individualModelResponse = await axios.get(`http://localhost:3000/api/individual_Info?smartphone=${encodeURIComponent(selectedModel)}`);
+      const individualModelResponse = await axios.get(`/api/individual_Info?smartphone=${encodeURIComponent(selectedModel)}`);
       const individualModelData = individualModelResponse.data;
 
       // Initialize counts and aspects
