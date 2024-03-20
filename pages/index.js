@@ -965,7 +965,7 @@ export default function Home() {
                       <TableCell colSpan="3">{review.smartphoneName}</TableCell>
                       <TableCell className="text-center">
                         <span style={{
-                          borderRadius: '1px', padding: '3px', backgroundColor: getBackgroundColor(review.Sentiment_Label), color: getTextColor(review.Sentiment_Label)
+                          borderRadius: '5px', padding: '3px', backgroundColor: getBackgroundColor(review.Sentiment_Label), color: getTextColor(review.Sentiment_Label)
                         }}>{getSentimentText(review.Sentiment_Label)}
                         </span>
                       </TableCell>
