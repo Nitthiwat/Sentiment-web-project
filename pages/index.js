@@ -61,7 +61,7 @@ export default function Home() {
     setIsLoaded(false); // Set loading state before fetching data
     const fetchAllDataSentiment = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/all_sentiments");
+        const response = await fetch("http://localhost:3000/api/all_sentiments")
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
