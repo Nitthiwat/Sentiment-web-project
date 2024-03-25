@@ -8,7 +8,6 @@ import { Checkbox } from "@nextui-org/react";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, getKeyValue } from "@nextui-org/react";
 import axios from 'axios';
 
-
 export default function compare() {
   const [isLoaded, setIsLoaded] = React.useState(false);
 
@@ -30,6 +29,9 @@ export default function compare() {
   const [reviews, setReviews] = useState([]);
 
   const [showNeutralData, setShowNeutralData] = useState(true);
+
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const [selectedSentimentsFilter, setSelectedSentimentsFilter] = useState(''); // Initial value set to "Positive"
   const [selectedAspectsFilter, setselectedAspectsFilter] = useState('');
@@ -407,7 +409,7 @@ export default function compare() {
 
         const data = response.data; // Assuming the response is already in JSON format
 
-        const overviewData = data[smartphoneName].OverallSentiment;
+        const overviewData = data[smartphoneName]?.OverallSentiment || {};
 
         setOverview({
           pos: overviewData.count_pos || 0,
@@ -415,7 +417,7 @@ export default function compare() {
           neg: overviewData.count_neg || 0,
         });
 
-        const aspectData = data[smartphoneName].Aspect;
+        const aspectData = data[smartphoneName]?.Aspect || {};
 
         setAspect({
           camera: {
@@ -959,6 +961,20 @@ export default function compare() {
         }
       }
 
+      const checkData = (overview, selectedModel) => {
+        if (overview.pos === 0 || overview.neg === 0 || overview.neu === 0) {
+          setAlertMessage(`${selectedModel}`);
+          return true;
+        }
+        return false;
+      };
+
+      if (checkData(overviewSm1, selectedModelSm1) || checkData(overviewSm2, selectedModelSm2) || (selectedModelSm3 && checkData(overviewSm3, selectedModelSm3))) {
+        setShowAlert(true);
+      } else {
+        setShowAlert(false);
+      }
+
       let overallBarChart = new Chart(ovaBarChartContext, {
         type: 'bar',
         plugins: [ChartDataLabels],
@@ -1202,6 +1218,20 @@ export default function compare() {
               </Checkbox>
             </div>
           </div>
+          <div className="mt-3">
+            {showAlert && (
+              <div class="flex items-center p-4 mb-4 text-sm text-red-800 border border-red-300 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:border-red-800" role="alert">
+                <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+                </svg>
+                <span class="sr-only">Info</span>
+                <div>
+                  <span class="font-medium">{alertMessage}</span> is not have value. Please select another smartphone.
+                </div>
+              </div>
+            )}
+          </div>
+
           {selectedModelSm1 && selectedModelSm2 && (
             <div className="grid grid-cols-11 gap-3">
               <div className="col-span-5 grid grid-cols-5">

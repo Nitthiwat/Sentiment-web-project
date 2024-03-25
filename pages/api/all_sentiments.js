@@ -1,8 +1,8 @@
 import clientPromise from "../../lib/mongodb";
 
-export const config = {
-    runtime: 'edge'
-  }
+// export const config = {
+//     runtime: 'edge'
+//   }
 
 export default async function handler(req, res) {
     try {
