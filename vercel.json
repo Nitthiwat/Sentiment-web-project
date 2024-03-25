@@ -1,0 +1,7 @@
+{
+    "functions": {
+      "api/all_sentiments.js": {
+        "maxDuration": 60
+      }
+    }
+  }
