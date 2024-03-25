@@ -1,11 +1,18 @@
 import clientPromise from "../../lib/mongodb";
 
-export const maxDuration = 300;
+export const config = {
+    runtime: 'edge'
+  }
 
 export default async function handler(req, res) {
     try {
         const client = await clientPromise;
         const db = client.db("deployData");
+
+        // Create indexes if they don't exist
+        // await db.collection("SmartphoneReview").createIndex({ is_sentiment_comment: 1 });
+        // await db.collection("SmartphoneReview").createIndex({ Brand: 1 });
+
 
         // Fetch only required fields using projection
         const cursor = db.collection("SmartphoneReview").find(
@@ -13,11 +20,14 @@ export default async function handler(req, res) {
             { projection: { Brand: 1, Sentiment_Label: 1 } }
         );
 
+        // Convert cursor to array
+        const reviews = await cursor.toArray();
+
         // Initialize an object to store sentiment counts for each brand
         const brandSentiments = {};
 
-        // Iterate through the cursor asynchronously
-        await cursor.forEach(async (item) => {
+        // Iterate through the reviews array synchronously
+        reviews.forEach(item => {
             const brand = item.Brand;
             const sentiment = item.Sentiment_Label;
 
@@ -36,7 +46,7 @@ export default async function handler(req, res) {
 
         // Calculate total sentiment counts
         const totalSentiments = {
-            count_all: await cursor.count(), // Count all documents
+            count_all: reviews.length,
             count_pos: 0,
             count_neu: 0,
             count_neg: 0
