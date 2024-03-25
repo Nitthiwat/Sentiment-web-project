@@ -1,4 +1,3 @@
-// import React from 'react'
 import Navbar from "@/components/navbar";
 import React, { useEffect, useState } from 'react';
 import { Autocomplete, AutocompleteItem, select } from "@nextui-org/react";
@@ -33,13 +32,13 @@ export default function compare() {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
-  const [selectedSentimentsFilter, setSelectedSentimentsFilter] = useState(''); // Initial value set to "Positive"
+  const [selectedSentimentsFilter, setSelectedSentimentsFilter] = useState('');
   const [selectedAspectsFilter, setselectedAspectsFilter] = useState('');
   const [selectedModelFilter, setselectedModelFilter] = useState('');
 
   const brandName = ["Apple", "Samsung", "OPPO", "vivo", "Huawei", "Xiaomi"]
 
-  // Helper function to determine background color based on sentiment
+
   const getBackgroundColor = (sentiment) => {
     switch (sentiment) {
       case 'pos':
@@ -49,10 +48,10 @@ export default function compare() {
       case 'neg':
         return "#FEF3F3";
       default:
-        return ""; // Default color
+        return ""; 
     }
   };
-  // Helper function to determine text color based on sentiment
+
   const getTextColor = (sentiment) => {
     switch (sentiment) {
       case 'pos':
@@ -62,10 +61,10 @@ export default function compare() {
       case 'neg':
         return "#EA4141";
       default:
-        return ""; // Default text color
+        return ""; 
     }
   };
-  // Helper function to determine sentiment text
+
   const getSentimentText = (sentiment) => {
     switch (sentiment) {
       case 'pos':
@@ -75,7 +74,7 @@ export default function compare() {
       case 'neg':
         return "Negative";
       default:
-        return sentiment; // Return original sentiment if not recognized
+        return sentiment; 
     }
   };
 
@@ -194,7 +193,7 @@ export default function compare() {
       key: "Sm2",
       label: selectedModelSm2,
     },
-    // Check if selectedModelSm3 is not null or undefined
+
     selectedModelSm3 && {
       key: "Sm3",
       label: selectedModelSm3,
@@ -241,19 +240,19 @@ export default function compare() {
   ];
 
   const handleCheckboxChangeNeutralData = () => {
-    setShowNeutralData(!showNeutralData); // Toggle the state
+    setShowNeutralData(!showNeutralData); 
   };
 
   const handleSelectSentimentchange = (newValue) => {
-    setSelectedSentimentsFilter(newValue ?? ''); // ถ้า newValue เป็น null หรือ undefined ให้กำหนดค่าเป็น ''
+    setSelectedSentimentsFilter(newValue ?? ''); 
   };
 
   const handleSelectAspectSentimentchange = (newValue) => {
-    setselectedAspectsFilter(newValue ?? ''); // ถ้า newValue เป็น null หรือ undefined ให้กำหนดค่าเป็น ''
+    setselectedAspectsFilter(newValue ?? ''); 
   };
 
   const handleSelectModelSentimentchange = (newValue) => {
-    setselectedModelFilter(newValue ?? ''); // ถ้า newValue เป็น null หรือ undefined ให้กำหนดค่าเป็น ''
+    setselectedModelFilter(newValue ?? ''); 
   };
 
   const filterReviews = () => {
@@ -322,10 +321,8 @@ export default function compare() {
         const responses = await Promise.all(promises);
         const reviewData = responses.map(response => response.data);
 
-        // Combine review data from all responses
         const combinedReviews = reviewData.flat();
 
-        // Update state with combined reviews
         setReviews(combinedReviews);
       } catch (error) {
         console.error('Error fetching smartphone review data:', error);
@@ -343,9 +340,8 @@ export default function compare() {
         setIsLoaded(true);
         try {
           const response = await axios.get(`/api/compare_smartphoneInfo?brandName=${encodeURIComponent(selectedBrand)}`);
-          console.log('Fetched data for', selectedBrand, response.data); // Check fetched data
-          setSmartphoneModels(response.data); // Update the state variable with fetched data
-          // console.log('State updated for', selectedBrand, response.data); // Check state variable update
+          console.log('Fetched data for', selectedBrand, response.data);
+          setSmartphoneModels(response.data);
         } catch (error) {
           console.error('Error fetching smartphone review data:', error);
         } finally {
@@ -373,7 +369,7 @@ export default function compare() {
         try {
           setIsLoaded(true);
           const response = await axios.get(`/api/compare_smartphoneInfo?smartphone=${encodeURIComponent(smartphoneName)}`);
-          console.log('Fetched data for Information', smartphoneName, response.data); // Check fetched data
+          console.log('Fetched data for Information', smartphoneName, response.data); 
           if (smartphoneName === selectedModelSm1) {
             setsmartphoneInfoSm1(response.data[0].spec);
           } else if (smartphoneName === selectedModelSm2) {
@@ -405,9 +401,8 @@ export default function compare() {
       try {
         setIsLoaded(true);
         const response = await axios.get(`/api/compare_smartphoneSentiment?smartphone=${encodeURIComponent(smartphoneName)}`);
-        // console.log("Response:", response); // Logging the response for debugging
 
-        const data = response.data; // Assuming the response is already in JSON format
+        const data = response.data; 
 
         const overviewData = data[smartphoneName]?.OverallSentiment || {};
 
