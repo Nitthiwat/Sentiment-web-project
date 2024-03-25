@@ -7,7 +7,7 @@ export default async function handler(req, res) {
         const db = client.db("deployData");
 
         // Fetch data from the database
-        const keywordSearchList = await db.collection("SmartphoneReview").find({
+        const keywordSearchList = await db.collection("SmartphoneReviewTest").find({
             is_sentiment_comment: true,
         }).toArray();
 

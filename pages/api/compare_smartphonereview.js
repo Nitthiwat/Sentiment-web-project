@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         const client = await clientPromise;
         const db = client.db("deployData");
 
-        const keywordSearchList = await db.collection("SmartphoneReview").find({
+        const keywordSearchList = await db.collection("SmartphoneReviewTest").find({
             is_sentiment_comment: true,
             keyword_search: smartphone // Filter by the selected smartphone
         }).toArray();
