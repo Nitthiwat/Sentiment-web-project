@@ -1226,7 +1226,7 @@ export default function compare() {
                 </svg>
                 <span class="sr-only">Info</span>
                 <div>
-                  <span class="font-medium">{alertMessage}</span> is not have value. Please select another smartphone.
+                  <span class="font-medium">{alertMessage}</span> is not have value. Please select different smartphone.
                 </div>
               </div>
             )}
