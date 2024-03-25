@@ -323,10 +323,10 @@ export default function Home() {
     }
   };
 
-  const handleModelChange = (selected) => {
-    setSelectedModel(selected);
-    showindividualModel(selected);
-  };
+  // const handleModelChange = (selected) => {
+  //   setSelectedModel(selected);
+  //   showindividualModel(selected);
+  // };
 
   useEffect(() => {
     showindividualModel(selectedModel);
@@ -343,67 +343,6 @@ export default function Home() {
       return reviews
     }
   }
-
-
-  // const fetchDataModel = (e) => {
-  //   setSelectedModel(e.target.value);
-  //   fetchDataBrand();
-  // }
-
-  // const callapi = async (fetchDataModel) => {
-  //   console.log("Test fetch data => ", fetchDataModel)
-
-
-  //   let brandres = await fetch(`http://localhost:3000/api/countsentiment?brand=${selectedBrand}&model=${fetchDataModel}`);
-
-  //   let countmodel = await brandres.json();
-  //   setSelectedModel(fetchDataModel);
-  //   console.log("yshs", countmodel)
-  //   setModelCountpos(countmodel.overviews.model_pos)
-  //   setModelCountneu(countmodel.overviews.model_neu)
-  //   setModelCountneg(countmodel.overviews.model_neg)
-  //   setAspectsData(countmodel.Aspect)
-
-  //   let reviewRes = await fetch(`http://localhost:3000/api/reviewmodel?model=${fetchDataModel}`, {
-  //     method: "GET",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //   });
-  //   let reviews = await reviewRes.json();
-  //   setReviews(reviews);
-
-  // };
-
-  // const fetchDataBrand = async () => {
-  //   console.log("Test fetch data => ", selectedModel)
-
-  //   let brandres = await fetch(`http://localhost:3000/api/countsentiment?brand=${selectedBrand}&model=${selectedModel}`, {
-  //     method: "GET",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //   });
-  //   let countmodel = await brandres.json();
-  //   console.log("yshs", countmodel)
-  //   await setModelCountpos(countmodel.overviews.model_pos)
-  //   await setModelCountneu(countmodel.overviews.model_neu)
-  //   await setModelCountneg(countmodel.overviews.model_neg)
-  //   await setAspectsData(countmodel.Aspect)
-
-  //   let reviewRes = await fetch(`http://localhost:3000/api/reviewmodel?model=${selectedModel}`, {
-  //     method: "GET",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //   });
-  //   let reviews = await reviewRes.json();
-  //   setReviews(reviews);
-  //   console.log('====================================');
-  //   console.log('hghg', reviews);
-  //   console.log('====================================');
-  // };
-
 
   if (donutChartRef.current) {
     if (donutChartRef.current.chart) {

@@ -12,10 +12,19 @@ export default async function handler(req, res) {
         const client = await clientPromise;
         const db = client.db("deployData");
 
-        const keywordSearchList = await db.collection("SmartphoneReviewTest").find({
+        const projection = {
+            _id: 0,
+            Sentiment_Label: 1,
+            text_Display: 1,
+            Aspects: 1
+        };
+
+        const keywordSearchList = await db.collection("SmartphoneReview").find({
             is_sentiment_comment: true,
             keyword_search: smartphone
-        }).toArray();
+        },
+            { projection }
+        ).toArray();
 
         res.status(200).json(keywordSearchList);
     } catch (error) {

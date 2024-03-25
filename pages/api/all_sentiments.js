@@ -1,21 +1,21 @@
 import clientPromise from "../../lib/mongodb";
 
 export default async function handler(req, res) {
-
     try {
         const client = await clientPromise;
         const db = client.db("deployData");
 
-        // Fetch data from the database
-        const keywordSearchList = await db.collection("SmartphoneReviewTest").find({
-            is_sentiment_comment: true,
-        }).toArray();
+        // Fetch only required fields using projection
+        const cursor = db.collection("SmartphoneReview").find(
+            { is_sentiment_comment: true },
+            { projection: { Brand: 1, Sentiment_Label: 1 } }
+        );
 
         // Initialize an object to store sentiment counts for each brand
         const brandSentiments = {};
 
-        // Iterate through the fetched data to count sentiments for each brand
-        keywordSearchList.forEach(item => {
+        // Iterate through the cursor asynchronously
+        await cursor.forEach(async (item) => {
             const brand = item.Brand;
             const sentiment = item.Sentiment_Label;
 
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
         // Calculate total sentiment counts
         const totalSentiments = {
-            count_all: keywordSearchList.length,
+            count_all: await cursor.count(), // Count all documents
             count_pos: 0,
             count_neu: 0,
             count_neg: 0

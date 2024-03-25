@@ -1,3 +1,5 @@
+
+
 import clientPromise from "../../lib/mongodb";
 
 export default async function handler(req, res) {
@@ -13,10 +15,22 @@ export default async function handler(req, res) {
         const client = await clientPromise;
         const db = client.db("deployData");
 
-        const keywordSearchList = await db.collection("SmartphoneReviewTest").find({
-            is_sentiment_comment: true,
-            keyword_search: smartphone // Filter by the selected smartphone
-        }).toArray();
+        // Projection to fetch only required fields
+        const projection = {
+            _id: 0,
+            textDisplay: 1,
+            keyword_search: 1,
+            Sentiment_Label: 1,
+            Aspects: 1
+        };
+
+        const keywordSearchList = await db.collection("SmartphoneReview").find(
+            {
+                is_sentiment_comment: true,
+                keyword_search: smartphone
+            },
+            { projection }
+        ).toArray();
 
         let formattedData;
 
@@ -37,9 +51,7 @@ export default async function handler(req, res) {
             formattedData = keywordSearchList.map(item => ({
                 textDisplay: item.textDisplay,
                 smartphoneName: item.keyword_search,
-                Sentiment_Label: item.Sentiment_Label,
-                // processed: item.processed,
-                // Aspects: item.Aspects
+                Sentiment_Label: item.Sentiment_Label
             }));
         }
 
